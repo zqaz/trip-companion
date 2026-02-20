@@ -2,11 +2,21 @@ export interface Trip {
   id: string;
   name: string;
   destination: string;
+  places?: string[];
   startDate: string;
   endDate: string;
   emoji: string;
   coverColor: string;
   createdAt: string;
+}
+
+export interface Settlement {
+  id: string;
+  tripId: string;
+  from: string; // memberId
+  to: string;   // memberId
+  amount: number;
+  settledAt: string;
 }
 
 export type DocumentCategory = 'docs' | 'tickets' | 'stays' | 'other';
