@@ -7,9 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { saveTrip } from '@/lib/storage';
+import { saveTrip, setBaseCurrency } from '@/lib/storage';
 import type { Trip } from '@/lib/types';
+import type { Currency } from '@/lib/types';
 import { CalendarIcon } from 'lucide-react';
+import LocationAutocomplete from '@/components/ui/LocationAutocomplete';
+import LocationChipInput from '@/components/ui/LocationChipInput';
 
 const COVER_OPTIONS = [
   { value: 'coral', label: '🌅 Sunset', gradient: 'from-primary to-pink' },
@@ -20,6 +23,16 @@ const COVER_OPTIONS = [
 
 const EMOJIS = ['✈️', '🗼', '🏖️', '🏔️', '🌴', '🗺️', '🏯', '🚂', '🚢', '⛩️'];
 
+const CURRENCY_OPTIONS: { value: Currency; symbol: string; label: string }[] = [
+  { value: 'USD', symbol: '$', label: 'USD' },
+  { value: 'EUR', symbol: '€', label: 'EUR' },
+  { value: 'GBP', symbol: '£', label: 'GBP' },
+  { value: 'INR', symbol: '₹', label: 'INR' },
+  { value: 'JPY', symbol: '¥', label: 'JPY' },
+  { value: 'AUD', symbol: 'A$', label: 'AUD' },
+  { value: 'CAD', symbol: 'C$', label: 'CAD' },
+];
+
 interface Props {
   onClose: () => void;
   onCreated: () => void;
@@ -28,17 +41,21 @@ interface Props {
 export default function NewTripModal({ onClose, onCreated }: Props) {
   const [name, setName] = useState('');
   const [destination, setDestination] = useState('');
+  const [places, setPlaces] = useState<string[]>([]);
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [emoji, setEmoji] = useState('✈️');
   const [coverColor, setCoverColor] = useState('coral');
+  const [tripCurrency, setTripCurrency] = useState<Currency>('USD');
 
   function handleCreate() {
     if (!name.trim() || !destination.trim() || !startDate || !endDate) return;
+    const tripId = `trip-${Date.now()}`;
     const trip: Trip = {
-      id: `trip-${Date.now()}`,
+      id: tripId,
       name: name.trim(),
       destination: destination.trim(),
+      places,
       startDate: format(startDate, 'yyyy-MM-dd'),
       endDate: format(endDate, 'yyyy-MM-dd'),
       emoji,
@@ -46,6 +63,7 @@ export default function NewTripModal({ onClose, onCreated }: Props) {
       createdAt: new Date().toISOString(),
     };
     saveTrip(trip);
+    setBaseCurrency(tripId, tripCurrency);
     onCreated();
   }
 
@@ -54,7 +72,7 @@ export default function NewTripModal({ onClose, onCreated }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-mobile bg-card rounded-t-3xl px-5 pb-10 pt-5 animate-slide-up">
+      <div className="relative w-full max-w-mobile bg-card rounded-t-3xl px-5 pb-10 pt-5 animate-slide-up max-h-[92vh] overflow-y-auto scrollbar-hide">
         {/* Handle */}
         <div className="w-10 h-1 bg-muted rounded-full mx-auto mb-5" />
 
@@ -96,14 +114,23 @@ export default function NewTripModal({ onClose, onCreated }: Props) {
             />
           </div>
 
-          {/* Destination */}
+          {/* Destination — autocomplete */}
           <div>
             <Label className="text-foreground/70 text-xs uppercase tracking-wider mb-2 block">Destination</Label>
-            <Input
+            <LocationAutocomplete
               value={destination}
-              onChange={e => setDestination(e.target.value)}
+              onChange={setDestination}
               placeholder="e.g. Paris, France"
-              className="bg-muted border-border text-foreground"
+            />
+          </div>
+
+          {/* Places to visit — chip input */}
+          <div>
+            <Label className="text-foreground/70 text-xs uppercase tracking-wider mb-2 block">Places to Visit</Label>
+            <LocationChipInput
+              value={places}
+              onChange={setPlaces}
+              placeholder="Search and add places..."
             />
           </div>
 
@@ -154,6 +181,28 @@ export default function NewTripModal({ onClose, onCreated }: Props) {
                   )}
                 >
                   {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Trip Currency */}
+          <div>
+            <Label className="text-foreground/70 text-xs uppercase tracking-wider mb-2 block">Trip Currency</Label>
+            <div className="grid grid-cols-4 gap-2">
+              {CURRENCY_OPTIONS.map(c => (
+                <button
+                  key={c.value}
+                  onClick={() => setTripCurrency(c.value)}
+                  className={cn(
+                    'py-2.5 rounded-xl flex flex-col items-center gap-0.5 transition-all font-bold text-sm',
+                    tripCurrency === c.value
+                      ? 'bg-primary text-primary-foreground ring-2 ring-primary ring-offset-1 ring-offset-card'
+                      : 'bg-muted text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <span className="text-base">{c.symbol}</span>
+                  <span className="text-[10px]">{c.label}</span>
                 </button>
               ))}
             </div>

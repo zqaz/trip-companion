@@ -7,6 +7,7 @@ import type {
   PackingItem,
   OOTDEntry,
   Currency,
+  Settlement,
 } from './types';
 
 // --- Generic helpers ---
@@ -168,3 +169,21 @@ export const setVaultPin = (pin: string) => localStorage.setItem('vault_pin', pi
 // --- Seed check ---
 export const isSeeded = (): boolean => localStorage.getItem('app_seeded') === 'true';
 export const markSeeded = () => localStorage.setItem('app_seeded', 'true');
+
+// --- Settlements ---
+export const getSettlements = (tripId: string): Settlement[] =>
+  getItem<Settlement[]>(`settlements_${tripId}`, []);
+export const setSettlements = (tripId: string, settlements: Settlement[]) =>
+  setItem(`settlements_${tripId}`, settlements);
+
+export function saveSettlement(settlement: Settlement): void {
+  const settlements = getSettlements(settlement.tripId);
+  const idx = settlements.findIndex(s => s.id === settlement.id);
+  if (idx >= 0) settlements[idx] = settlement;
+  else settlements.push(settlement);
+  setSettlements(settlement.tripId, settlements);
+}
+
+export function deleteSettlement(tripId: string, settlementId: string): void {
+  setSettlements(tripId, getSettlements(tripId).filter(s => s.id !== settlementId));
+}
