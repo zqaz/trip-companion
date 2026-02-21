@@ -71,8 +71,8 @@ export default function Index({ user, onLogout }: Props) {
   }
 
   return (
-    <div className="flex items-start justify-center min-h-screen">
-      <div className="w-full max-w-mobile flex flex-col h-screen overflow-hidden">
+    <div className="flex items-start justify-center h-full">
+      <div className="w-full max-w-mobile flex flex-col h-full overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-12 pb-4 flex-shrink-0">
           <div>

@@ -42,8 +42,8 @@ export default function TripDetail() {
   };
 
   return (
-    <div className="flex items-start justify-center min-h-screen">
-      <div className="w-full max-w-mobile h-screen flex flex-col overflow-hidden">
+    <div className="flex items-start justify-center h-full">
+      <div className="w-full max-w-mobile h-full flex flex-col overflow-hidden">
         {/* Trip Header */}
         <div className={cn('flex-shrink-0 bg-gradient-to-r px-5 pt-12 pb-4', COVER_GRADIENTS[trip.coverColor] || COVER_GRADIENTS.coral)}>
           <button

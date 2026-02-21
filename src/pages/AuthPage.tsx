@@ -59,7 +59,7 @@ export default function AuthPage({ onAuthenticated }: Props) {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen px-5">
+    <div className="flex items-center justify-center h-full px-5 overflow-y-auto">
       <div className="w-full max-w-mobile animate-fade-in">
         {/* Logo */}
         <div className="text-center mb-10">

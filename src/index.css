@@ -154,19 +154,25 @@
   }
 
   html {
+    /* Use dvh (dynamic viewport height) so the gradient always fills the
+       actual visible area on mobile, excluding browser chrome */
+    height: 100dvh;
+    height: 100%; /* fallback for browsers that don't support dvh */
     background: var(--bg-gradient);
     background-attachment: fixed;
-    min-height: 100%;
+    overflow: hidden;
   }
 
   body {
     @apply text-foreground;
+    height: 100%;
     background: transparent;
+    overflow: hidden;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-tap-highlight-color: transparent;
   }
 
-  html, body, #root {
+  #root {
     height: 100%;
     overflow: hidden;
   }
