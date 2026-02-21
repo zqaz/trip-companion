@@ -1,15 +1,16 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { MapPin, X } from 'lucide-react';
-import { searchCities, cityLabel, type City } from '@/data/cities';
+import { searchCities, searchCitiesForCountry, cityLabel, type City } from '@/data/cities';
 import { cn } from '@/lib/utils';
 
 interface Props {
   value: string[];
   onChange: (value: string[]) => void;
   placeholder?: string;
+  filterCountry?: string; // when set, only cities in this country are shown
 }
 
-export default function LocationChipInput({ value, onChange, placeholder = 'Search and add places...' }: Props) {
+export default function LocationChipInput({ value, onChange, placeholder = 'Search and add places...', filterCountry }: Props) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<City[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -31,12 +32,15 @@ export default function LocationChipInput({ value, onChange, placeholder = 'Sear
   const search = useCallback((q: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      const found = searchCities(q).filter(c => !value.includes(cityLabel(c)));
+      const raw = filterCountry
+        ? searchCitiesForCountry(filterCountry, q)
+        : searchCities(q);
+      const found = raw.filter(c => !value.includes(cityLabel(c)));
       setResults(found);
-      setIsOpen(q.length >= 2);
+      setIsOpen(filterCountry ? found.length > 0 : q.length >= 2);
       setHighlightedIndex(-1);
     }, 150);
-  }, [value]);
+  }, [value, filterCountry]);
 
   function handleInput(e: React.ChangeEvent<HTMLInputElement>) {
     const q = e.target.value;

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Ticket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,30 +19,36 @@ const CATEGORIES: { value: ItineraryCategory; label: string; emoji: string }[] =
 interface Props {
   tripId: string;
   day: number;
+  itemToEdit?: ItineraryItem;
   onClose: () => void;
   onSaved: () => void;
 }
 
-export default function AddItineraryModal({ tripId, day, onClose, onSaved }: Props) {
-  const [time, setTime] = useState('10:00');
-  const [place, setPlace] = useState('');
-  const [activity, setActivity] = useState('');
-  const [category, setCategory] = useState<ItineraryCategory>('sightseeing');
-  const [notes, setNotes] = useState('');
+export default function AddItineraryModal({ tripId, day, itemToEdit, onClose, onSaved }: Props) {
+  const isEditing = !!itemToEdit;
+
+  const [time, setTime] = useState(itemToEdit?.time ?? '10:00');
+  const [place, setPlace] = useState(itemToEdit?.place ?? '');
+  const [activity, setActivity] = useState(itemToEdit?.activity ?? '');
+  const [category, setCategory] = useState<ItineraryCategory>(itemToEdit?.category ?? 'sightseeing');
+  const [notes, setNotes] = useState(itemToEdit?.notes ?? '');
+  const [ticketPrice, setTicketPrice] = useState(itemToEdit?.ticketPrice?.toString() ?? '');
 
   function handleSave() {
-    if (!place.trim() || !activity.trim()) return;
+    if (!place.trim()) return;
     const existing = getItinerary(tripId).filter(i => i.day === day);
+    const price = parseFloat(ticketPrice);
     const item: ItineraryItem = {
-      id: `itin-${Date.now()}`,
+      id: itemToEdit?.id ?? `itin-${Date.now()}`,
       tripId,
       day,
       time,
       place: place.trim(),
-      activity: activity.trim(),
+      activity: activity.trim() || undefined,
       category,
       notes: notes.trim() || undefined,
-      order: existing.length,
+      ticketPrice: !isNaN(price) && price > 0 ? price : undefined,
+      order: itemToEdit?.order ?? existing.length,
     };
     saveItineraryItem(item);
     onSaved();
@@ -54,7 +60,9 @@ export default function AddItineraryModal({ tripId, day, onClose, onSaved }: Pro
       <div className="relative w-full max-w-mobile bg-card rounded-t-3xl px-5 pb-10 pt-5 animate-slide-up max-h-[90vh] overflow-y-auto scrollbar-hide">
         <div className="w-10 h-1 bg-muted rounded-full mx-auto mb-5" />
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-foreground font-black text-xl">Add to Day {day} 📋</h2>
+          <h2 className="text-foreground font-black text-xl">
+            {isEditing ? 'Edit Plan Item ✏️' : `Add to Day ${day} 📋`}
+          </h2>
           <button onClick={onClose}><X className="w-5 h-5 text-muted-foreground" /></button>
         </div>
 
@@ -94,22 +102,42 @@ export default function AddItineraryModal({ tripId, day, onClose, onSaved }: Pro
           </div>
 
           <div>
-            <Label className="text-foreground/70 text-xs uppercase tracking-wider mb-2 block">Activity Description</Label>
+            <Label className="text-foreground/70 text-xs uppercase tracking-wider mb-2 block">
+              Activity Description <span className="normal-case text-muted-foreground font-normal">(optional)</span>
+            </Label>
             <Input value={activity} onChange={e => setActivity(e.target.value)} placeholder="e.g. Visit the Mona Lisa" className="bg-muted border-border" />
           </div>
 
           <div>
-            <Label className="text-foreground/70 text-xs uppercase tracking-wider mb-2 block">Notes (optional)</Label>
+            <Label className="text-foreground/70 text-xs uppercase tracking-wider mb-2 block flex items-center gap-1.5">
+              <Ticket className="w-3 h-3" /> Ticket Price <span className="normal-case text-muted-foreground font-normal">(optional)</span>
+            </Label>
+            <div className="flex items-center gap-1 bg-muted border border-border rounded-xl px-3 py-2.5">
+              <span className="text-muted-foreground text-sm">$</span>
+              <input
+                type="number"
+                value={ticketPrice}
+                onChange={e => setTicketPrice(e.target.value)}
+                placeholder="0.00"
+                min="0"
+                step="0.01"
+                className="bg-transparent text-foreground text-sm w-full focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-foreground/70 text-xs uppercase tracking-wider mb-2 block">Notes <span className="normal-case text-muted-foreground font-normal">(optional)</span></Label>
             <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any tips or notes..." className="bg-muted border-border resize-none" rows={3} />
           </div>
         </div>
 
         <Button
           onClick={handleSave}
-          disabled={!place.trim() || !activity.trim()}
+          disabled={!place.trim()}
           className="w-full mt-6 h-12 rounded-2xl font-bold text-base border-0 gradient-hero text-white"
         >
-          Add to Itinerary ✅
+          {isEditing ? 'Save Changes ✅' : 'Add to Itinerary ✅'}
         </Button>
       </div>
     </div>

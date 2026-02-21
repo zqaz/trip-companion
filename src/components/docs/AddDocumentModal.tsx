@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO, startOfDay } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,8 +9,9 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { saveDocument } from '@/lib/storage';
-import type { TravelDocument, DocumentType, DocumentCategory } from '@/lib/types';
+import { saveDocument, savePackingItem } from '@/lib/storage';
+import type { TravelDocument, DocumentType, DocumentCategory, PackingItem } from '@/lib/types';
+import ImageUpload from '@/components/ui/ImageUpload';
 
 const DOC_TYPES: { value: DocumentType; label: string; emoji: string; category: DocumentCategory }[] = [
   { value: 'passport', label: 'Passport', emoji: '🛂', category: 'docs' },
@@ -24,23 +25,31 @@ const DOC_TYPES: { value: DocumentType; label: string; emoji: string; category: 
 
 interface Props {
   tripId: string;
+  docToEdit?: TravelDocument;
+  tripStartDate?: string;
+  tripEndDate?: string;
   onClose: () => void;
   onSaved: () => void;
 }
 
-export default function AddDocumentModal({ tripId, onClose, onSaved }: Props) {
-  const [type, setType] = useState<DocumentType>('passport');
-  const [name, setName] = useState('');
-  const [number, setNumber] = useState('');
-  const [expiryDate, setExpiryDate] = useState<Date | undefined>();
-  const [hasReminder, setHasReminder] = useState(false);
-  const [notes, setNotes] = useState('');
+export default function AddDocumentModal({ tripId, docToEdit, tripStartDate, tripEndDate, onClose, onSaved }: Props) {
+  const isEditing = !!docToEdit;
+
+  const [type, setType] = useState<DocumentType>(docToEdit?.type ?? 'passport');
+  const [name, setName] = useState(docToEdit?.name ?? '');
+  const [number, setNumber] = useState(docToEdit?.number ?? '');
+  const [expiryDate, setExpiryDate] = useState<Date | undefined>(
+    docToEdit?.expiryDate ? parseISO(docToEdit.expiryDate) : undefined
+  );
+  const [hasReminder, setHasReminder] = useState(docToEdit?.hasReminder ?? false);
+  const [notes, setNotes] = useState(docToEdit?.notes ?? '');
+  const [photoRef, setPhotoRef] = useState<string | undefined>(docToEdit?.photoRef);
 
   function handleSave() {
     if (!name.trim()) return;
     const selectedType = DOC_TYPES.find(d => d.value === type)!;
     const doc: TravelDocument = {
-      id: `doc-${Date.now()}`,
+      id: docToEdit?.id ?? `doc-${Date.now()}`,
       tripId,
       type,
       category: selectedType.category,
@@ -49,19 +58,34 @@ export default function AddDocumentModal({ tripId, onClose, onSaved }: Props) {
       expiryDate: expiryDate ? format(expiryDate, 'yyyy-MM-dd') : undefined,
       notes: notes.trim() || undefined,
       hasReminder,
-      createdAt: new Date().toISOString(),
+      photoRef,
+      createdAt: docToEdit?.createdAt ?? new Date().toISOString(),
     };
     saveDocument(doc);
+
+    // Auto-add to packing checklist when creating (not editing)
+    if (!isEditing) {
+      const packingItem: PackingItem = {
+        id: `pack-doc-${doc.id}`,
+        tripId,
+        category: 'documents',
+        name: doc.name,
+        isPacked: false,
+        isCustom: true,
+      };
+      savePackingItem(packingItem);
+    }
+
     onSaved();
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-mobile bg-card rounded-t-3xl px-5 pb-10 pt-5 animate-slide-up max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-mobile bg-card rounded-t-3xl px-5 pb-10 pt-5 animate-slide-up max-h-[90vh] overflow-y-auto scrollbar-hide">
         <div className="w-10 h-1 bg-muted rounded-full mx-auto mb-5" />
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-foreground font-black text-xl">Add Document 📄</h2>
+          <h2 className="text-foreground font-black text-xl">{isEditing ? 'Edit Document ✏️' : 'Add Document 📄'}</h2>
           <button onClick={onClose}><X className="w-5 h-5 text-muted-foreground" /></button>
         </div>
 
@@ -107,9 +131,29 @@ export default function AddDocumentModal({ tripId, onClose, onSaved }: Props) {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0 bg-card border-border z-[60]" align="start">
-                <Calendar mode="single" selected={expiryDate} onSelect={setExpiryDate} initialFocus className="p-3 pointer-events-auto" />
+                <Calendar
+                  mode="single"
+                  selected={expiryDate}
+                  onSelect={setExpiryDate}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                  disabled={(d) => {
+                    const today = startOfDay(new Date());
+                    if (d < today) return true;
+                    if (tripStartDate && d < startOfDay(parseISO(tripStartDate))) return true;
+                    if (tripEndDate && d > startOfDay(parseISO(tripEndDate))) return true;
+                    return false;
+                  }}
+                  fromDate={tripStartDate ? parseISO(tripStartDate) : new Date()}
+                  toDate={tripEndDate ? parseISO(tripEndDate) : undefined}
+                />
               </PopoverContent>
             </Popover>
+            {(tripStartDate && tripEndDate) && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Trip dates: {format(parseISO(tripStartDate), 'MMM d')} – {format(parseISO(tripEndDate), 'MMM d, yyyy')}
+              </p>
+            )}
           </div>
 
           <div className="flex items-center justify-between bg-muted rounded-xl px-4 py-3">
@@ -130,11 +174,9 @@ export default function AddDocumentModal({ tripId, onClose, onSaved }: Props) {
             <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any notes..." className="bg-muted border-border resize-none" rows={3} />
           </div>
 
-          {/* Photo placeholder */}
-          <div className="border-2 border-dashed border-border rounded-xl p-6 text-center">
-            <p className="text-2xl mb-2">📸</p>
-            <p className="text-muted-foreground text-sm font-semibold">Attach Photo / PDF</p>
-            <p className="text-muted-foreground text-xs mt-1">Coming soon — storage feature</p>
+          <div>
+            <Label className="text-foreground/70 text-xs uppercase tracking-wider mb-2 block">Attach Photo / PDF</Label>
+            <ImageUpload value={photoRef} onChange={setPhotoRef} />
           </div>
         </div>
 
@@ -143,7 +185,7 @@ export default function AddDocumentModal({ tripId, onClose, onSaved }: Props) {
           disabled={!name.trim()}
           className="w-full mt-6 h-12 rounded-2xl font-bold text-base border-0 gradient-hero text-white"
         >
-          Save Document ✅
+          {isEditing ? 'Save Changes ✅' : 'Save Document ✅'}
         </Button>
       </div>
     </div>

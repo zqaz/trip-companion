@@ -39,6 +39,7 @@ export default function ExpensesTab({ tripId }: Props) {
   const [view, setView] = useState<MainView>('expenses');
   const [balanceSubTab, setBalanceSubTab] = useState<BalanceSubTab>('spend');
   const [showAdd, setShowAdd] = useState(false);
+  const [editExpense, setEditExpense] = useState<Expense | null>(null);
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
@@ -61,8 +62,17 @@ export default function ExpensesTab({ tripId }: Props) {
     totalOwedByMember[m.id] = 0;
   });
   expenses.forEach(exp => {
-    netBalances[exp.paidById] = (netBalances[exp.paidById] || 0) + exp.convertedAmount;
-    totalPaidByMember[exp.paidById] = (totalPaidByMember[exp.paidById] || 0) + exp.convertedAmount;
+    // Multi-payer: distribute credit to each payer proportionally
+    if (exp.paidAmounts && Object.keys(exp.paidAmounts).length > 0) {
+      Object.entries(exp.paidAmounts).forEach(([memberId, amount]) => {
+        netBalances[memberId] = (netBalances[memberId] || 0) + amount;
+        totalPaidByMember[memberId] = (totalPaidByMember[memberId] || 0) + amount;
+      });
+    } else {
+      // Single payer
+      netBalances[exp.paidById] = (netBalances[exp.paidById] || 0) + exp.convertedAmount;
+      totalPaidByMember[exp.paidById] = (totalPaidByMember[exp.paidById] || 0) + exp.convertedAmount;
+    }
     exp.splits.forEach(s => {
       netBalances[s.memberId] = (netBalances[s.memberId] || 0) - s.amount;
       totalOwedByMember[s.memberId] = (totalOwedByMember[s.memberId] || 0) + s.amount;
@@ -215,8 +225,8 @@ export default function ExpensesTab({ tripId }: Props) {
               <div className="text-center py-12"><p className="text-4xl mb-3">💸</p><p className="text-muted-foreground text-sm">No expenses yet</p></div>
             ) : (
               <>
-                {expenses.map(exp => (
-                  <ExpenseCard key={exp.id} expense={exp} members={members} baseCurrency={baseCurrency} onDelete={() => { deleteExpense(tripId, exp.id); refresh(); }} />
+                {              expenses.map(exp => (
+                  <ExpenseCard key={exp.id} expense={exp} members={members} baseCurrency={baseCurrency} onDelete={() => { deleteExpense(tripId, exp.id); refresh(); }} onEdit={() => setEditExpense(exp)} />
                 ))}
                 {/* Category mini-chart */}
                 {catSorted.length > 0 && (
@@ -531,12 +541,27 @@ export default function ExpensesTab({ tripId }: Props) {
       {showAdd && (
         <AddExpenseModal tripId={tripId} onClose={() => setShowAdd(false)} onSaved={() => { refresh(); setShowAdd(false); }} />
       )}
+      {editExpense && (
+        <AddExpenseModal tripId={tripId} expenseToEdit={editExpense} onClose={() => setEditExpense(null)} onSaved={() => { refresh(); setEditExpense(null); }} />
+      )}
     </div>
   );
 }
 
-function ExpenseCard({ expense, members, baseCurrency, onDelete }: { expense: Expense; members: TripMember[]; baseCurrency: Currency; onDelete: () => void }) {
-  const paidBy = members.find(m => m.id === expense.paidById);
+function ExpenseCard({ expense, members, baseCurrency, onDelete, onEdit }: { expense: Expense; members: TripMember[]; baseCurrency: Currency; onDelete: () => void; onEdit: () => void }) {
+  const isMultiPayer = expense.paidAmounts && Object.keys(expense.paidAmounts).length > 0;
+
+  // Payers: either all from paidAmounts, or single paidById
+  const payers = isMultiPayer
+    ? Object.entries(expense.paidAmounts!).map(([id, amt]) => {
+        const m = members.find(mem => mem.id === id);
+        return m ? { member: m, amount: amt } : null;
+      }).filter(Boolean) as { member: TripMember; amount: number }[]
+    : (() => {
+        const m = members.find(mem => mem.id === expense.paidById);
+        return m ? [{ member: m, amount: expense.convertedAmount }] : [];
+      })();
+
   const splitMembers = expense.splits.map(s => members.find(m => m.id === s.memberId)).filter(Boolean);
 
   return (
@@ -557,25 +582,35 @@ function ExpenseCard({ expense, members, baseCurrency, onDelete }: { expense: Ex
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <p className="text-muted-foreground text-xs">Paid by {paidBy?.emoji} {paidBy?.name ?? 'Unknown'}</p>
-            {/* Split avatar chips */}
-            {splitMembers.length > 0 && (
-              <div className="flex items-center gap-0.5">
-                {splitMembers.slice(0, 5).map((m, i) => (
-                  <span key={i} className="text-base leading-none" title={m?.name}>{m?.emoji}</span>
-                ))}
-                {splitMembers.length > 5 && <span className="text-xs text-muted-foreground">+{splitMembers.length - 5}</span>}
-              </div>
-            )}
+          <div className="flex items-center gap-1 mt-1 flex-wrap">
+            <span className="text-muted-foreground text-xs">Paid by</span>
+            {payers.map(({ member, amount }) => (
+              <span key={member.id} className="text-xs text-foreground font-semibold">
+                {member.emoji} {member.name}{isMultiPayer ? ` (${formatCurrency(amount, baseCurrency)})` : ''}
+              </span>
+            ))}
           </div>
+          {/* Split avatars */}
+          {splitMembers.length > 0 && (
+            <div className="flex items-center gap-0.5 mt-0.5">
+              <span className="text-muted-foreground text-xs mr-1">Split:</span>
+              {splitMembers.slice(0, 5).map((m, i) => (
+                <span key={i} className="text-base leading-none" title={m?.name}>{m?.emoji}</span>
+              ))}
+              {splitMembers.length > 5 && <span className="text-xs text-muted-foreground">+{splitMembers.length - 5}</span>}
+            </div>
+          )}
           {expense.currency !== baseCurrency && (
             <p className="text-muted-foreground/60 text-[10px] mt-0.5">Rate: 1 {expense.currency} = {expense.rateUsed} {baseCurrency}</p>
           )}
         </div>
       </div>
-      <div className="flex justify-end mt-2">
-        <button onClick={onDelete} className="text-xs text-destructive/70 hover:text-destructive">Delete</button>
+      <div className="flex items-center justify-between mt-2 border-t border-border/50 pt-2">
+        <span className="text-muted-foreground text-[10px]">{expense.date}</span>
+        <div className="flex gap-3">
+          <button onClick={onEdit} className="text-xs text-primary/80 hover:text-primary font-semibold">Edit</button>
+          <button onClick={onDelete} className="text-xs text-destructive/70 hover:text-destructive font-semibold">Delete</button>
+        </div>
       </div>
     </div>
   );

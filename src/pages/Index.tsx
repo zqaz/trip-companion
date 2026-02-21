@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, MapPin, FileText, DollarSign, Map, Package, Plane } from 'lucide-react';
-import { getTrips, getDocuments, getExpenses, getPackingList, getItinerary } from '@/lib/storage';
+import { Plus, MapPin, FileText, DollarSign, Map, Package, Plane, Trash2, Sun, Moon, LogOut } from 'lucide-react';
+import { getTrips, getDocuments, getExpenses, getPackingList, getItinerary, deleteTrip } from '@/lib/storage';
 import { formatCurrency } from '@/lib/currencies';
+import { useTheme } from '@/hooks/useTheme';
+import type { User } from '@/lib/types';
 import { differenceInDays, format, isAfter, isBefore, parseISO } from 'date-fns';
 import NewTripModal from '@/components/trips/NewTripModal';
 import type { Trip } from '@/lib/types';
@@ -33,10 +35,20 @@ function CountdownBadge({ trip }: { trip: Trip }) {
   return <span className="text-xs font-semibold text-foreground/70">{days} days to go ✈️</span>;
 }
 
-export default function Index() {
+interface Props { user: User; onLogout: () => void; }
+
+export default function Index({ user, onLogout }: Props) {
   const navigate = useNavigate();
+  const { theme, toggle: toggleTheme } = useTheme();
   const [showNewTrip, setShowNewTrip] = useState(false);
   const [, setRefresh] = useState(0);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  function handleDeleteTrip(id: string) {
+    deleteTrip(id);
+    setConfirmDeleteId(null);
+    setRefresh(r => r + 1);
+  }
 
   const trips = getTrips();
   const activeTrip = trips.find(t => getTripStatus(t) === 'active') || trips.find(t => getTripStatus(t) === 'upcoming') || trips[0];
@@ -59,7 +71,7 @@ export default function Index() {
   }
 
   return (
-    <div className="flex items-start justify-center min-h-screen bg-background">
+    <div className="flex items-start justify-center min-h-screen">
       <div className="w-full max-w-mobile flex flex-col h-screen overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-12 pb-4 flex-shrink-0">
@@ -70,7 +82,25 @@ export default function Index() {
               </div>
               <span className="text-lg font-black text-foreground tracking-tight">WanderVault</span>
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5 pl-10">Your travel companion</p>
+            <p className="text-xs text-muted-foreground mt-0.5 pl-10">Hey, {user.name.split(' ')[0]} 👋</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              className="w-9 h-9 rounded-xl glass-card flex items-center justify-center text-foreground/70 hover:text-foreground transition-colors"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            {/* Logout */}
+            <button
+              onClick={onLogout}
+              className="w-9 h-9 rounded-xl glass-card flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
+              aria-label="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
@@ -146,26 +176,59 @@ export default function Index() {
               <div className="space-y-3">
                 {trips.map(trip => {
                   const status = getTripStatus(trip);
+                  const isConfirming = confirmDeleteId === trip.id;
                   return (
-                    <div
-                      key={trip.id}
-                      className="bg-card rounded-2xl p-4 flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-transform card-shadow border border-border"
-                      onClick={() => navigate(`/trip/${trip.id}`)}
-                    >
-                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${COVER_GRADIENTS[trip.coverColor] || COVER_GRADIENTS.coral} flex items-center justify-center flex-shrink-0`}>
-                        <span className="text-2xl">{trip.emoji}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-foreground font-bold text-sm truncate">{trip.name}</p>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <MapPin className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                          <p className="text-muted-foreground text-xs truncate">{trip.destination}</p>
+                    <div key={trip.id} className="bg-card rounded-2xl card-shadow border border-border overflow-hidden">
+                      {/* Main row */}
+                      <div
+                        className="p-4 flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-transform"
+                        onClick={() => { if (!isConfirming) navigate(`/trip/${trip.id}`); }}
+                      >
+                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${COVER_GRADIENTS[trip.coverColor] || COVER_GRADIENTS.coral} flex items-center justify-center flex-shrink-0`}>
+                          <span className="text-2xl">{trip.emoji}</span>
                         </div>
-                        <p className="text-muted-foreground text-xs mt-0.5">
-                          {format(parseISO(trip.startDate), 'MMM d')} – {format(parseISO(trip.endDate), 'MMM d, yyyy')}
-                        </p>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-foreground font-bold text-sm truncate">{trip.name}</p>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <MapPin className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                            <p className="text-muted-foreground text-xs truncate">{trip.destination}</p>
+                          </div>
+                          <p className="text-muted-foreground text-xs mt-0.5">
+                            {format(parseISO(trip.startDate), 'MMM d')} – {format(parseISO(trip.endDate), 'MMM d, yyyy')}
+                          </p>
+                        </div>
+                        <StatusBadge status={status} />
+                        <button
+                          onClick={e => { e.stopPropagation(); setConfirmDeleteId(isConfirming ? null : trip.id); }}
+                          className="ml-1 p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors flex-shrink-0"
+                          aria-label="Delete trip"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
-                      <StatusBadge status={status} />
+
+                      {/* Inline confirm banner */}
+                      {isConfirming && (
+                        <div className="px-4 pb-4 flex items-center justify-between gap-3 border-t border-border/50 pt-3">
+                          <p className="text-sm text-foreground/80 flex-1">
+                            Delete <span className="font-bold">{trip.name}</span> and all its data?
+                          </p>
+                          <div className="flex gap-2 flex-shrink-0">
+                            <button
+                              onClick={() => setConfirmDeleteId(null)}
+                              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-muted text-muted-foreground"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTrip(trip.id)}
+                              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-destructive text-white"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

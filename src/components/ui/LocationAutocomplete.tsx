@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { MapPin, X } from 'lucide-react';
+import { MapPin, Globe, X } from 'lucide-react';
 import { searchCities, cityLabel, type City } from '@/data/cities';
+import { searchCountries } from '@/data/countries';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -8,15 +9,18 @@ interface Props {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  mode?: 'city' | 'country';
 }
 
-export default function LocationAutocomplete({ value, onChange, placeholder = 'e.g. Paris, France', className }: Props) {
+export default function LocationAutocomplete({ value, onChange, placeholder = 'e.g. Paris, France', className, mode = 'city' }: Props) {
   const [query, setQuery] = useState(value);
-  const [results, setResults] = useState<City[]>([]);
+  const [cityResults, setCityResults] = useState<City[]>([]);
+  const [countryResults, setCountryResults] = useState<string[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const results = mode === 'country' ? countryResults : cityResults;
 
   // Sync external value
   useEffect(() => {
@@ -37,17 +41,23 @@ export default function LocationAutocomplete({ value, onChange, placeholder = 'e
   const search = useCallback((q: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      const found = searchCities(q);
-      setResults(found);
-      setIsOpen(q.length >= 2);
+      if (mode === 'country') {
+        const found = searchCountries(q);
+        setCountryResults(found);
+        setIsOpen(q.length >= 1 && found.length > 0);
+      } else {
+        const found = searchCities(q);
+        setCityResults(found);
+        setIsOpen(q.length >= 2);
+      }
       setHighlightedIndex(-1);
     }, 150);
-  }, []);
+  }, [mode]);
 
   function handleInput(e: React.ChangeEvent<HTMLInputElement>) {
     const q = e.target.value;
     setQuery(q);
-    onChange(q); // propagate raw text too
+    onChange(q);
     search(q);
   }
 
@@ -56,7 +66,14 @@ export default function LocationAutocomplete({ value, onChange, placeholder = 'e
     setQuery(label);
     onChange(label);
     setIsOpen(false);
-    setResults([]);
+    setCityResults([]);
+  }
+
+  function selectCountry(country: string) {
+    setQuery(country);
+    onChange(country);
+    setIsOpen(false);
+    setCountryResults([]);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -69,7 +86,8 @@ export default function LocationAutocomplete({ value, onChange, placeholder = 'e
       setHighlightedIndex(i => Math.max(i - 1, -1));
     } else if (e.key === 'Enter' && highlightedIndex >= 0) {
       e.preventDefault();
-      selectCity(results[highlightedIndex]);
+      if (mode === 'country') selectCountry(countryResults[highlightedIndex]);
+      else selectCity(cityResults[highlightedIndex]);
     } else if (e.key === 'Escape') {
       setIsOpen(false);
     }
@@ -88,16 +106,21 @@ export default function LocationAutocomplete({ value, onChange, placeholder = 'e
     );
   }
 
+  const Icon = mode === 'country' ? Globe : MapPin;
+
   return (
     <div ref={wrapperRef} className={cn('relative', className)}>
       <div className="relative">
-        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+        <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
         <input
           type="text"
           value={query}
           onChange={handleInput}
           onKeyDown={handleKeyDown}
-          onFocus={() => query.length >= 2 && setIsOpen(results.length > 0)}
+          onFocus={() => {
+            if (mode === 'country' && query.length >= 1) setIsOpen(countryResults.length > 0);
+            else if (mode === 'city' && query.length >= 2) setIsOpen(cityResults.length > 0);
+          }}
           placeholder={placeholder}
           className="w-full bg-muted border border-border rounded-xl pl-9 pr-8 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all"
         />
@@ -115,9 +138,26 @@ export default function LocationAutocomplete({ value, onChange, placeholder = 'e
         <div className="absolute left-0 right-0 top-full mt-1 z-[60] bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
           {results.length === 0 ? (
             <div className="px-4 py-3 text-muted-foreground text-sm">No results found</div>
+          ) : mode === 'country' ? (
+            <ul className="max-h-60 overflow-y-auto">
+              {(results as string[]).map((country, i) => (
+                <li key={country}>
+                  <button
+                    onMouseDown={e => { e.preventDefault(); selectCountry(country); }}
+                    className={cn(
+                      'w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors',
+                      i === highlightedIndex ? 'bg-primary/10' : 'hover:bg-muted'
+                    )}
+                  >
+                    <Globe className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                    <p className="text-foreground text-sm">{highlightMatch(country, query)}</p>
+                  </button>
+                </li>
+              ))}
+            </ul>
           ) : (
             <ul className="max-h-60 overflow-y-auto">
-              {results.map((city, i) => (
+              {(results as City[]).map((city, i) => (
                 <li key={`${city.city}-${city.country}`}>
                   <button
                     onMouseDown={e => { e.preventDefault(); selectCity(city); }}

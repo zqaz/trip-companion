@@ -8,6 +8,7 @@ import type {
   OOTDEntry,
   Currency,
   Settlement,
+  User,
 } from './types';
 
 // --- Generic helpers ---
@@ -47,6 +48,8 @@ export function deleteTrip(id: string): void {
   localStorage.removeItem(`packing_${id}`);
   localStorage.removeItem(`ootd_${id}`);
   localStorage.removeItem(`base_currency_${id}`);
+  localStorage.removeItem(`vault_pin_${id}`);
+  localStorage.removeItem(`settlements_${id}`);
 }
 
 // --- Documents ---
@@ -162,9 +165,9 @@ export function deleteOOTDEntry(tripId: string, entryId: string): void {
   setOOTD(tripId, getOOTD(tripId).filter(e => e.id !== entryId));
 }
 
-// --- Vault PIN ---
-export const getVaultPin = (): string | null => localStorage.getItem('vault_pin');
-export const setVaultPin = (pin: string) => localStorage.setItem('vault_pin', pin);
+// --- Vault PIN (per-trip) ---
+export const getVaultPin = (tripId: string): string | null => localStorage.getItem(`vault_pin_${tripId}`);
+export const setVaultPin = (tripId: string, pin: string) => localStorage.setItem(`vault_pin_${tripId}`, pin);
 
 // --- Seed check ---
 export const isSeeded = (): boolean => localStorage.getItem('app_seeded') === 'true';
@@ -187,3 +190,39 @@ export function saveSettlement(settlement: Settlement): void {
 export function deleteSettlement(tripId: string, settlementId: string): void {
   setSettlements(tripId, getSettlements(tripId).filter(s => s.id !== settlementId));
 }
+
+// --- Auth ---
+function simpleHash(str: string): string {
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) h = (h * 33) ^ str.charCodeAt(i);
+  return (h >>> 0).toString(36);
+}
+
+const USERS_KEY = 'wv_users';
+const SESSION_KEY = 'wv_session';
+
+export const getUsers = (): User[] => getItem<User[]>(USERS_KEY, []);
+
+export function registerUser(name: string, email: string, password: string): User | null {
+  const users = getUsers();
+  if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) return null; // already exists
+  const user: User = {
+    id: `user-${Date.now()}`,
+    name: name.trim(),
+    email: email.trim().toLowerCase(),
+    passwordHash: simpleHash(password),
+    createdAt: new Date().toISOString(),
+  };
+  setItem(USERS_KEY, [...users, user]);
+  return user;
+}
+
+export function loginUser(email: string, password: string): User | null {
+  const user = getUsers().find(u => u.email === email.trim().toLowerCase());
+  if (!user || user.passwordHash !== simpleHash(password)) return null;
+  return user;
+}
+
+export const getSession = (): User | null => getItem<User | null>(SESSION_KEY, null);
+export const setSession = (user: User) => setItem(SESSION_KEY, user);
+export const clearSession = () => localStorage.removeItem(SESSION_KEY);

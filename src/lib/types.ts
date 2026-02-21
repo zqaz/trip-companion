@@ -1,3 +1,11 @@
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  passwordHash: string; // simple hash for localStorage auth
+  createdAt: string;
+}
+
 export interface Trip {
   id: string;
   name: string;
@@ -70,6 +78,7 @@ export interface Expense {
   rateUsed: number;
   category: ExpenseCategory;
   paidById: string;
+  paidAmounts?: Record<string, number>; // memberId → amount in baseCurrency (multi-payer)
   splits: ExpenseSplit[];
   notes?: string;
   date: string;
@@ -84,9 +93,10 @@ export interface ItineraryItem {
   day: number;
   time: string;
   place: string;
-  activity: string;
+  activity?: string;
   category: ItineraryCategory;
   notes?: string;
+  ticketPrice?: number;
   order: number;
 }
 

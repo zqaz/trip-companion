@@ -4,6 +4,7 @@ import { getVaultPin, setVaultPin } from '@/lib/storage';
 import { cn } from '@/lib/utils';
 
 interface Props {
+  tripId: string;
   mode: 'lock' | 'unlock' | 'set';
   onSuccess: () => void;
   onClose: () => void;
@@ -11,13 +12,13 @@ interface Props {
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'];
 
-export default function PinModal({ mode, onSuccess, onClose }: Props) {
+export default function PinModal({ tripId, mode, onSuccess, onClose }: Props) {
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [step, setStep] = useState<'enter' | 'confirm'>('enter');
   const [error, setError] = useState('');
 
-  const storedPin = getVaultPin();
+  const storedPin = getVaultPin(tripId);
   const isSettingPin = mode === 'set' || (mode === 'unlock' && !storedPin);
   const title = mode === 'lock' ? 'Lock Vault' : isSettingPin ? 'Set PIN' : 'Unlock Vault';
 
@@ -36,7 +37,7 @@ export default function PinModal({ mode, onSuccess, onClose }: Props) {
       setConfirmPin(next);
       if (next.length === 4) {
         if (next === pin) {
-          setVaultPin(next);
+          setVaultPin(tripId, next);
           onSuccess();
         } else {
           setError('PINs do not match. Try again.');

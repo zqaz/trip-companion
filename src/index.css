@@ -4,25 +4,23 @@
 
 @layer base {
   :root {
-    /* Deep Navy base */
-    --background: 224 71% 4%;
+    /* ── Dark theme (default) ─────────────────────────────── */
+    --background: 232 60% 4%;
     --foreground: 213 31% 91%;
 
-    --card: 224 60% 8%;
+    --card: 232 55% 9%;
     --card-foreground: 213 31% 91%;
 
-    --popover: 224 60% 8%;
+    --popover: 232 55% 9%;
     --popover-foreground: 213 31% 91%;
 
-    /* Coral/Orange accent */
     --primary: 16 90% 60%;
     --primary-foreground: 0 0% 100%;
 
-    /* Teal highlight */
     --secondary: 175 70% 41%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 224 40% 16%;
+    --muted: 232 40% 16%;
     --muted-foreground: 215 20% 65%;
 
     --accent: 175 70% 41%;
@@ -31,8 +29,8 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 224 40% 18%;
-    --input: 224 40% 18%;
+    --border: 232 40% 18%;
+    --input: 232 40% 18%;
     --ring: 16 90% 60%;
 
     --radius: 1rem;
@@ -40,9 +38,9 @@
     /* Custom travel tokens */
     --coral: 16 90% 60%;
     --coral-light: 20 95% 70%;
-    --navy: 224 71% 4%;
-    --navy-card: 224 60% 8%;
-    --navy-elevated: 224 50% 13%;
+    --navy: 232 60% 4%;
+    --navy-card: 232 55% 9%;
+    --navy-elevated: 232 50% 13%;
     --teal: 175 70% 41%;
     --teal-light: 175 70% 55%;
     --gold: 43 96% 56%;
@@ -52,16 +50,101 @@
     /* Gradient tokens */
     --gradient-hero: linear-gradient(135deg, hsl(16 90% 60%), hsl(330 80% 60%));
     --gradient-teal: linear-gradient(135deg, hsl(175 70% 41%), hsl(200 80% 50%));
-    --gradient-navy: linear-gradient(180deg, hsl(224 60% 8%), hsl(224 71% 4%));
 
-    --sidebar-background: 224 60% 8%;
+    /* ── Glass system – dark ───────────────────────────────── */
+    --bg-gradient: linear-gradient(
+      135deg,
+      hsl(232 65% 4%) 0%,
+      hsl(265 50% 8%) 50%,
+      hsl(212 60% 5%) 100%
+    );
+    --glass-card:         rgba(255, 255, 255, 0.07);
+    --glass-card-border:  rgba(255, 255, 255, 0.13);
+    --glass-card-shadow:  0 8px 32px rgba(0, 0, 0, 0.45),
+                          inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    --glass-muted:        rgba(255, 255, 255, 0.06);
+    --glass-modal:        rgba(8, 10, 26, 0.82);
+    --glass-modal-border: rgba(255, 255, 255, 0.10);
+    --glass-nav:          rgba(5, 7, 18, 0.78);
+    --glass-nav-border:   rgba(255, 255, 255, 0.10);
+    --glass-blur:         blur(20px);
+    --glass-blur-heavy:   blur(28px);
+
+    --sidebar-background: 232 55% 9%;
     --sidebar-foreground: 213 31% 91%;
     --sidebar-primary: 16 90% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 224 40% 16%;
+    --sidebar-accent: 232 40% 16%;
     --sidebar-accent-foreground: 213 31% 91%;
-    --sidebar-border: 224 40% 18%;
+    --sidebar-border: 232 40% 18%;
     --sidebar-ring: 16 90% 60%;
+  }
+
+  /* ── Light theme ─────────────────────────────────────────── */
+  .light {
+    --background: 230 65% 96%;
+    --foreground: 224 45% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 224 45% 12%;
+
+    --popover: 228 55% 97%;
+    --popover-foreground: 224 45% 12%;
+
+    --primary: 16 90% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 175 70% 38%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 228 45% 90%;
+    --muted-foreground: 224 25% 42%;
+
+    --accent: 175 70% 38%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 80% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 228 40% 82%;
+    --input: 228 40% 82%;
+    --ring: 16 90% 55%;
+
+    --coral: 16 90% 55%;
+    --coral-light: 20 95% 65%;
+    --teal: 175 70% 38%;
+    --teal-light: 175 70% 50%;
+    --gold: 43 90% 50%;
+    --purple: 270 65% 55%;
+    --pink: 330 75% 55%;
+
+    --sidebar-background: 228 55% 97%;
+    --sidebar-foreground: 224 45% 12%;
+    --sidebar-primary: 16 90% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 228 45% 90%;
+    --sidebar-accent-foreground: 224 45% 12%;
+    --sidebar-border: 228 40% 82%;
+    --sidebar-ring: 16 90% 55%;
+
+    /* ── Glass system – light ─────────────────────────────── */
+    --bg-gradient: linear-gradient(
+      135deg,
+      hsl(228 78% 74%) 0%,
+      hsl(268 62% 78%) 50%,
+      hsl(210 72% 76%) 100%
+    );
+    --glass-card:         rgba(255, 255, 255, 0.44);
+    --glass-card-border:  rgba(255, 255, 255, 0.68);
+    --glass-card-shadow:  0 8px 32px rgba(80, 100, 200, 0.12),
+                          inset 0 1px 0 rgba(255, 255, 255, 0.90);
+    --glass-muted:        rgba(255, 255, 255, 0.32);
+    --glass-modal:        rgba(225, 232, 255, 0.82);
+    --glass-modal-border: rgba(255, 255, 255, 0.60);
+    --glass-nav:          rgba(215, 225, 255, 0.76);
+    --glass-nav-border:   rgba(255, 255, 255, 0.55);
+    --glass-blur:         blur(20px);
+    --glass-blur-heavy:   blur(28px);
   }
 }
 
@@ -70,13 +153,19 @@
     @apply border-border;
   }
 
+  html {
+    background: var(--bg-gradient);
+    background-attachment: fixed;
+    min-height: 100%;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background: transparent;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Mobile-first scrolling */
   html, body, #root {
     height: 100%;
     overflow: hidden;
@@ -100,18 +189,89 @@
     background: var(--gradient-teal);
   }
 
+  /* Explicit glass utility classes (for opt-in use) */
   .glass-card {
-    background: hsl(var(--card) / 0.8);
+    background: var(--glass-card);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-card-border);
+    box-shadow: var(--glass-card-shadow);
+  }
+
+  .glass-modal {
+    background: var(--glass-modal);
+    backdrop-filter: var(--glass-blur-heavy);
+    -webkit-backdrop-filter: var(--glass-blur-heavy);
+    border-color: var(--glass-modal-border);
+  }
+
+  .glass-nav {
+    background: var(--glass-nav);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-color: var(--glass-nav-border);
+  }
+
+  .glass-muted {
+    background: var(--glass-muted);
     backdrop-filter: blur(12px);
-    border: 1px solid hsl(var(--border));
+    -webkit-backdrop-filter: blur(12px);
   }
 
   .card-shadow {
-    box-shadow: 0 4px 24px hsl(var(--navy) / 0.6), 0 1px 4px hsl(var(--coral) / 0.1);
+    box-shadow: var(--glass-card-shadow);
   }
 
   .tab-active {
     color: hsl(var(--coral));
     border-bottom: 2px solid hsl(var(--coral));
   }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Global glass overrides – applied inside #glass-app
+   These are unlayered so they win over @layer utilities without !important
+   ───────────────────────────────────────────────────────────────── */
+
+/* Cards */
+#glass-app .bg-card {
+  background: var(--glass-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-color: var(--glass-card-border);
+  box-shadow: var(--glass-card-shadow);
+}
+
+/* Muted / input surfaces */
+#glass-app .bg-muted {
+  background: var(--glass-muted);
+}
+
+/* Popover/dropdown surfaces */
+#glass-app .bg-popover {
+  background: var(--glass-modal);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-color: var(--glass-modal-border);
+}
+
+/* Bottom-sheet modal inner panels */
+#glass-app .rounded-t-3xl.bg-card {
+  background: var(--glass-modal);
+  backdrop-filter: var(--glass-blur-heavy);
+  -webkit-backdrop-filter: var(--glass-blur-heavy);
+  border-color: var(--glass-modal-border);
+}
+
+/* Bottom tab bar */
+#glass-app .bg-card.border-t {
+  background: var(--glass-nav);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-color: var(--glass-nav-border);
+}
+
+/* Transparent page wrappers so gradient shows through */
+#glass-app .page-root {
+  background: transparent;
 }

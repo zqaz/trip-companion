@@ -42,7 +42,7 @@ export default function TripDetail() {
   };
 
   return (
-    <div className="flex items-start justify-center min-h-screen bg-background">
+    <div className="flex items-start justify-center min-h-screen">
       <div className="w-full max-w-mobile h-screen flex flex-col overflow-hidden">
         {/* Trip Header */}
         <div className={cn('flex-shrink-0 bg-gradient-to-r px-5 pt-12 pb-4', COVER_GRADIENTS[trip.coverColor] || COVER_GRADIENTS.coral)}>
@@ -63,7 +63,7 @@ export default function TripDetail() {
 
         {/* Tab content area */}
         <div className="flex-1 overflow-hidden flex flex-col">
-          {activeTab === 'docs' && <DocumentsTab tripId={trip.id} />}
+          {activeTab === 'docs' && <DocumentsTab tripId={trip.id} startDate={trip.startDate} endDate={trip.endDate} />}
           {activeTab === 'expenses' && <ExpensesTab tripId={trip.id} />}
           {activeTab === 'itinerary' && <ItineraryTab tripId={trip.id} startDate={trip.startDate} endDate={trip.endDate} />}
           {activeTab === 'packing' && <PackingTab tripId={trip.id} startDate={trip.startDate} endDate={trip.endDate} />}

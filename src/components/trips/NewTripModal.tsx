@@ -7,8 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { saveTrip, setBaseCurrency } from '@/lib/storage';
-import type { Trip } from '@/lib/types';
+import { saveTrip, setBaseCurrency, saveMember } from '@/lib/storage';
+import type { Trip, TripMember } from '@/lib/types';
 import type { Currency } from '@/lib/types';
 import { CalendarIcon } from 'lucide-react';
 import LocationAutocomplete from '@/components/ui/LocationAutocomplete';
@@ -64,6 +64,17 @@ export default function NewTripModal({ onClose, onCreated }: Props) {
     };
     saveTrip(trip);
     setBaseCurrency(tripId, tripCurrency);
+
+    // Auto-add "Me" as the default member
+    const me: TripMember = {
+      id: `member-me-${tripId}`,
+      tripId,
+      name: 'Me',
+      emoji: '🧑',
+      isYou: true,
+    };
+    saveMember(me);
+
     onCreated();
   }
 
@@ -114,23 +125,25 @@ export default function NewTripModal({ onClose, onCreated }: Props) {
             />
           </div>
 
-          {/* Destination — autocomplete */}
+          {/* Destination — country autocomplete */}
           <div>
-            <Label className="text-foreground/70 text-xs uppercase tracking-wider mb-2 block">Destination</Label>
+            <Label className="text-foreground/70 text-xs uppercase tracking-wider mb-2 block">Destination Country</Label>
             <LocationAutocomplete
               value={destination}
               onChange={setDestination}
-              placeholder="e.g. Paris, France"
+              placeholder="e.g. France"
+              mode="country"
             />
           </div>
 
-          {/* Places to visit — chip input */}
+          {/* Places to visit — chip input filtered by selected country */}
           <div>
             <Label className="text-foreground/70 text-xs uppercase tracking-wider mb-2 block">Places to Visit</Label>
             <LocationChipInput
               value={places}
               onChange={setPlaces}
-              placeholder="Search and add places..."
+              placeholder={destination ? `Cities in ${destination}…` : 'Select a country first'}
+              filterCountry={destination || undefined}
             />
           </div>
 
@@ -146,7 +159,7 @@ export default function NewTripModal({ onClose, onCreated }: Props) {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 bg-card border-border z-[60]" align="start">
-                  <Calendar mode="single" selected={startDate} onSelect={setStartDate} initialFocus className="p-3 pointer-events-auto" />
+                  <Calendar mode="single" selected={startDate} onSelect={setStartDate} initialFocus disabled={{ before: new Date() }} className="p-3 pointer-events-auto" />
                 </PopoverContent>
               </Popover>
             </div>
@@ -160,7 +173,7 @@ export default function NewTripModal({ onClose, onCreated }: Props) {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 bg-card border-border z-[60]" align="start">
-                  <Calendar mode="single" selected={endDate} onSelect={setEndDate} initialFocus className="p-3 pointer-events-auto" />
+                  <Calendar mode="single" selected={endDate} onSelect={setEndDate} initialFocus disabled={{ before: startDate ?? new Date() }} className="p-3 pointer-events-auto" />
                 </PopoverContent>
               </Popover>
             </div>

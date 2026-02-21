@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { getPackingList, savePackingItem, deletePackingItem } from '@/lib/storage';
 import { getOOTD, saveOOTDEntry, deleteOOTDEntry } from '@/lib/storage';
 import { parseISO, differenceInDays, addDays, format } from 'date-fns';
 import type { PackingItem, PackingCategory, OOTDEntry } from '@/lib/types';
 import { Progress } from '@/components/ui/progress';
+import ImageUpload from '@/components/ui/ImageUpload';
 import { cn } from '@/lib/utils';
 
 const PACKING_CATS: { value: PackingCategory; label: string; emoji: string }[] = [
@@ -175,6 +176,7 @@ function OOTDPlanner({ tripId, days, start, onRefresh }: {
   const [addingDay, setAddingDay] = useState<number | null>(null);
   const [outfitName, setOutfitName] = useState('');
   const [description, setDescription] = useState('');
+  const [photoRef, setPhotoRef] = useState<string | undefined>();
 
   const allOOTD = getOOTD(tripId);
 
@@ -186,11 +188,13 @@ function OOTDPlanner({ tripId, days, start, onRefresh }: {
       day,
       outfitName: outfitName.trim(),
       description: description.trim() || undefined,
+      photoRef,
       createdAt: new Date().toISOString(),
     };
     saveOOTDEntry(entry);
     setOutfitName('');
     setDescription('');
+    setPhotoRef(undefined);
     setAddingDay(null);
     onRefresh();
   }
@@ -217,8 +221,12 @@ function OOTDPlanner({ tripId, days, start, onRefresh }: {
             {dayOOTD.map(entry => (
               <div key={entry.id} className="px-4 py-3 border-t border-border">
                 <div className="flex items-start gap-3">
-                  <div className="w-12 h-16 bg-muted rounded-xl flex items-center justify-center flex-shrink-0 text-2xl">
-                    👗
+                  <div className="w-12 h-16 bg-muted rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden text-2xl">
+                    {entry.photoRef && entry.photoRef.startsWith('data:image') ? (
+                      <img src={entry.photoRef} alt={entry.outfitName} className="w-full h-full object-cover" />
+                    ) : (
+                      '👗'
+                    )}
                   </div>
                   <div className="flex-1">
                     <p className="text-foreground font-bold text-sm">{entry.outfitName}</p>
@@ -251,9 +259,7 @@ function OOTDPlanner({ tripId, days, start, onRefresh }: {
                   className="w-full bg-muted border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                   rows={2}
                 />
-                <div className="border-dashed border-2 border-border rounded-xl p-3 text-center">
-                  <p className="text-muted-foreground text-xs">📸 Photo placeholder — tap to attach</p>
-                </div>
+                <ImageUpload value={photoRef} onChange={setPhotoRef} />
                 <button onClick={() => saveOutfit(day)} className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold">
                   Save Outfit ✨
                 </button>
