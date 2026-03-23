@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Plus, MapPin, Grip, FileText, Ticket, Pencil, Trash2 } from 'lucide-react';
+import { Plus, MapPin, Grip, FileText, Ticket, Pencil, Trash2, Sparkles } from 'lucide-react';
 import { getItinerary, saveItineraryItem, deleteItineraryItem, setItinerary, getDocuments } from '@/lib/storage';
 import { parseISO, differenceInDays, addDays, format } from 'date-fns';
 import type { ItineraryItem, ItineraryCategory } from '@/lib/types';
 import AddItineraryModal from './AddItineraryModal';
+import AIPlannerModal from './AIPlannerModal';
 import { cn } from '@/lib/utils';
 
 const CAT_CONFIG: Record<ItineraryCategory, { emoji: string; color: string; label: string }> = {
