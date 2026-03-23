@@ -17,11 +17,12 @@ const CAT_CONFIG: Record<ItineraryCategory, { emoji: string; color: string; labe
 
 interface Props {
   tripId: string;
+  destination: string;
   startDate: string;
   endDate: string;
 }
 
-export default function ItineraryTab({ tripId, startDate, endDate }: Props) {
+export default function ItineraryTab({ tripId, destination, startDate, endDate }: Props) {
   const start = parseISO(startDate);
   const end = parseISO(endDate);
   const totalDays = differenceInDays(end, start) + 1;
