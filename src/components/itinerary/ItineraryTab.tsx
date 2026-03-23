@@ -233,11 +233,17 @@ export default function ItineraryTab({ tripId, destination, startDate, endDate }
         )}
       </div>
 
-      {/* Add button */}
-      <div className="px-4 pb-4 pt-2 flex-shrink-0">
+      {/* Action buttons */}
+      <div className="px-4 pb-4 pt-2 flex-shrink-0 flex gap-2">
+        <button
+          onClick={() => setShowAI(true)}
+          className="flex-1 py-3.5 rounded-2xl bg-gold/20 text-gold font-bold text-sm flex items-center justify-center gap-2 border border-gold/30"
+        >
+          <Sparkles className="w-4 h-4" /> AI Plan
+        </button>
         <button
           onClick={() => setShowAdd(true)}
-          className="w-full py-3.5 rounded-2xl gradient-hero text-white font-bold text-sm flex items-center justify-center gap-2"
+          className="flex-1 py-3.5 rounded-2xl gradient-hero text-white font-bold text-sm flex items-center justify-center gap-2"
         >
           <Plus className="w-4 h-4" /> Add to Day {selectedDay}
         </button>
@@ -258,6 +264,17 @@ export default function ItineraryTab({ tripId, destination, startDate, endDate }
           itemToEdit={editItem}
           onClose={() => setEditItem(null)}
           onSaved={() => { setRefresh(r => r + 1); setEditItem(null); }}
+        />
+      )}
+      {showAI && (
+        <AIPlannerModal
+          tripId={tripId}
+          destination={destination}
+          startDate={startDate}
+          endDate={endDate}
+          totalDays={totalDays}
+          onClose={() => setShowAI(false)}
+          onGenerated={() => { setRefresh(r => r + 1); setShowAI(false); }}
         />
       )}
     </div>
