@@ -28,13 +28,39 @@ interface GeneratedItem {
   selected: boolean;
 }
 
-const GEMINI_KEY_STORAGE = 'gemini_api_key';
+const GEMINI_KEY_STORAGE = 'gemini_api_key_enc';
+const ENC_PREFIX = 'enc:';
+
+// Simple obfuscation using base64 + XOR with a static key (not cryptographically secure,
+// but prevents casual reading of the key from localStorage / DevTools)
+const OBFUSCATION_KEY = 'WanderVault2024!';
+
+function xorObfuscate(input: string, key: string): string {
+  return Array.from(input)
+    .map((ch, i) => String.fromCharCode(ch.charCodeAt(0) ^ key.charCodeAt(i % key.length)))
+    .join('');
+}
+
+function encryptKey(plainKey: string): string {
+  const xored = xorObfuscate(plainKey, OBFUSCATION_KEY);
+  return ENC_PREFIX + btoa(xored);
+}
+
+function decryptKey(stored: string): string {
+  if (!stored.startsWith(ENC_PREFIX)) return stored; // legacy plain key
+  const b64 = stored.slice(ENC_PREFIX.length);
+  const xored = atob(b64);
+  return xorObfuscate(xored, OBFUSCATION_KEY);
+}
 
 function getGeminiKey(): string {
-  return localStorage.getItem(GEMINI_KEY_STORAGE) || '';
+  const stored = localStorage.getItem(GEMINI_KEY_STORAGE) || '';
+  if (!stored) return '';
+  return decryptKey(stored);
 }
+
 function setGeminiKey(key: string) {
-  localStorage.setItem(GEMINI_KEY_STORAGE, key);
+  localStorage.setItem(GEMINI_KEY_STORAGE, encryptKey(key));
 }
 
 export default function AIPlannerModal({ tripId, destination, startDate, endDate, totalDays, onClose, onGenerated }: Props) {
