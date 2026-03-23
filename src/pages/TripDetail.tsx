@@ -65,7 +65,7 @@ export default function TripDetail() {
         <div className="flex-1 overflow-hidden flex flex-col">
           {activeTab === 'docs' && <DocumentsTab tripId={trip.id} startDate={trip.startDate} endDate={trip.endDate} />}
           {activeTab === 'expenses' && <ExpensesTab tripId={trip.id} />}
-          {activeTab === 'itinerary' && <ItineraryTab tripId={trip.id} startDate={trip.startDate} endDate={trip.endDate} />}
+          {activeTab === 'itinerary' && <ItineraryTab tripId={trip.id} destination={trip.destination} startDate={trip.startDate} endDate={trip.endDate} />}
           {activeTab === 'packing' && <PackingTab tripId={trip.id} startDate={trip.startDate} endDate={trip.endDate} />}
         </div>
 

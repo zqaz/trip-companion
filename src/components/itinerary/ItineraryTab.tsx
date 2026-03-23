@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Plus, MapPin, Grip, FileText, Ticket, Pencil, Trash2 } from 'lucide-react';
+import { Plus, MapPin, Grip, FileText, Ticket, Pencil, Trash2, Sparkles } from 'lucide-react';
 import { getItinerary, saveItineraryItem, deleteItineraryItem, setItinerary, getDocuments } from '@/lib/storage';
 import { parseISO, differenceInDays, addDays, format } from 'date-fns';
 import type { ItineraryItem, ItineraryCategory } from '@/lib/types';
 import AddItineraryModal from './AddItineraryModal';
+import AIPlannerModal from './AIPlannerModal';
 import { cn } from '@/lib/utils';
 
 const CAT_CONFIG: Record<ItineraryCategory, { emoji: string; color: string; label: string }> = {
@@ -16,11 +17,12 @@ const CAT_CONFIG: Record<ItineraryCategory, { emoji: string; color: string; labe
 
 interface Props {
   tripId: string;
+  destination: string;
   startDate: string;
   endDate: string;
 }
 
-export default function ItineraryTab({ tripId, startDate, endDate }: Props) {
+export default function ItineraryTab({ tripId, destination, startDate, endDate }: Props) {
   const start = parseISO(startDate);
   const end = parseISO(endDate);
   const totalDays = differenceInDays(end, start) + 1;
@@ -28,6 +30,7 @@ export default function ItineraryTab({ tripId, startDate, endDate }: Props) {
 
   const [selectedDay, setSelectedDay] = useState(1);
   const [showAdd, setShowAdd] = useState(false);
+  const [showAI, setShowAI] = useState(false);
   const [editItem, setEditItem] = useState<ItineraryItem | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
@@ -120,54 +123,53 @@ export default function ItineraryTab({ tripId, startDate, endDate }: Props) {
                   dragOverIdx === idx && 'ring-2 ring-primary'
                 )}
               >
-                {/* Main content row */}
-                <div className="p-4 flex gap-3">
-                  {/* Time column */}
-                  <div className="flex-shrink-0 w-12 text-center">
-                    <p className="text-foreground font-black text-xs">{item.time}</p>
-                    <div className="w-px h-full bg-border mx-auto mt-1" />
+                {/* Main content row — matches reference layout */}
+                <div className="p-4 flex items-center gap-3">
+                  {/* Time */}
+                  <div className="flex-shrink-0 w-14">
+                    <p className="text-foreground font-black text-sm">{item.time}</p>
+                  </div>
+
+                  {/* Category icon */}
+                  <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center text-base flex-shrink-0', CAT_CONFIG[item.category].color)}>
+                    {CAT_CONFIG[item.category].emoji}
                   </div>
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start gap-2">
-                      <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center text-sm flex-shrink-0', CAT_CONFIG[item.category].color)}>
-                        {CAT_CONFIG[item.category].emoji}
-                      </div>
-                      <div className="flex-1">
-                        {item.activity && (
-                          <p className="text-foreground font-bold text-sm leading-tight">{item.activity}</p>
-                        )}
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <MapPin className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                          <p className="text-muted-foreground text-xs">{item.place}</p>
-                        </div>
-                        {item.ticketPrice != null && (
-                          <div className="flex items-center gap-1 mt-0.5">
-                            <Ticket className="w-3 h-3 text-gold flex-shrink-0" />
-                            <p className="text-gold text-xs font-semibold">${item.ticketPrice.toFixed(2)}</p>
-                          </div>
-                        )}
-                        {item.notes && <p className="text-muted-foreground text-xs mt-1 italic">"{item.notes}"</p>}
-                      </div>
-                      <div className="flex items-center gap-1.5 flex-shrink-0">
-                        <Grip className="w-4 h-4 text-muted-foreground cursor-grab" />
-                        <button
-                          onClick={() => setEditItem(item)}
-                          className="p-1 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                          aria-label="Edit"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => setConfirmDeleteId(isConfirming ? null : item.id)}
-                          className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                          aria-label="Delete"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                    <p className="text-foreground font-bold text-sm leading-tight truncate">
+                      {item.activity || item.place}
+                    </p>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <MapPin className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                      <p className="text-muted-foreground text-xs truncate">{item.place}</p>
                     </div>
+                    {item.ticketPrice != null && (
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <Ticket className="w-3 h-3 text-gold flex-shrink-0" />
+                        <p className="text-gold text-xs font-semibold">${item.ticketPrice.toFixed(2)}</p>
+                      </div>
+                    )}
+                    {item.notes && <p className="text-muted-foreground text-[11px] mt-1 italic">"{item.notes}"</p>}
+                  </div>
+
+                  {/* Action icons */}
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <Grip className="w-4 h-4 text-muted-foreground cursor-grab" />
+                    <button
+                      onClick={() => setEditItem(item)}
+                      className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                      aria-label="Edit"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setConfirmDeleteId(isConfirming ? null : item.id)}
+                      className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                      aria-label="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
 
@@ -230,11 +232,17 @@ export default function ItineraryTab({ tripId, startDate, endDate }: Props) {
         )}
       </div>
 
-      {/* Add button */}
-      <div className="px-4 pb-4 pt-2 flex-shrink-0">
+      {/* Action buttons */}
+      <div className="px-4 pb-4 pt-2 flex-shrink-0 flex gap-2">
+        <button
+          onClick={() => setShowAI(true)}
+          className="flex-1 py-3.5 rounded-2xl bg-gold/20 text-gold font-bold text-sm flex items-center justify-center gap-2 border border-gold/30"
+        >
+          <Sparkles className="w-4 h-4" /> AI Plan
+        </button>
         <button
           onClick={() => setShowAdd(true)}
-          className="w-full py-3.5 rounded-2xl gradient-hero text-white font-bold text-sm flex items-center justify-center gap-2"
+          className="flex-1 py-3.5 rounded-2xl gradient-hero text-white font-bold text-sm flex items-center justify-center gap-2"
         >
           <Plus className="w-4 h-4" /> Add to Day {selectedDay}
         </button>
@@ -255,6 +263,17 @@ export default function ItineraryTab({ tripId, startDate, endDate }: Props) {
           itemToEdit={editItem}
           onClose={() => setEditItem(null)}
           onSaved={() => { setRefresh(r => r + 1); setEditItem(null); }}
+        />
+      )}
+      {showAI && (
+        <AIPlannerModal
+          tripId={tripId}
+          destination={destination}
+          startDate={startDate}
+          endDate={endDate}
+          totalDays={totalDays}
+          onClose={() => setShowAI(false)}
+          onGenerated={() => { setRefresh(r => r + 1); setShowAI(false); }}
         />
       )}
     </div>
