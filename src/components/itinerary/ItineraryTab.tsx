@@ -30,6 +30,7 @@ export default function ItineraryTab({ tripId, destination, startDate, endDate }
 
   const [selectedDay, setSelectedDay] = useState(1);
   const [showAdd, setShowAdd] = useState(false);
+  const [showAI, setShowAI] = useState(false);
   const [editItem, setEditItem] = useState<ItineraryItem | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
